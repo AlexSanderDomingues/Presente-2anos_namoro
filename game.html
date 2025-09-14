@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>One Piece Game</title>
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(#87ceeb, #1e90ff);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Trebuchet MS', sans-serif;
+    }
+
+    canvas {
+      background: url('mar.png');
+      background-size: cover;
+      border: 3px solid #000;
+      border-radius: 10px;
+    }
+
+    #mensagemFinal {
+      position: absolute;
+      top: 30%;
+      text-align: center;
+      font-size: 2rem;
+      font-weight: bold;
+      color: white;
+      text-shadow: 2px 2px 5px black;
+      display: none;
+      animation: fadeIn 2s ease-in-out forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <div id="mensagemFinal">🎉 Você é o meu One Piece ❤️ 🏴‍☠️</div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let frames = 0;
+    const DEGREE = Math.PI/180;
+
+    // Carregar imagens
+    const barco = new Image();
+    barco.src = "barco_pirata.png";
+
+    const obstaculoImg = new Image();
+    obstaculoImg.src = "pilastra.png";
+
+    // Barco
+    const ship = {
+      x: 50,
+      y: 150,
+      w: 40,
+      h: 40,
+      gravity: 0.25,
+      jump: 4.6,
+      speed: 0,
+      rotation: 0,
+      draw: function() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        ctx.drawImage(barco, -this.w/2, -this.h/2, this.w, this.h);
+        ctx.restore();
+      },
+      flap: function() {
+        this.speed = -this.jump;
+      },
+      update: function() {
+        this.speed += this.gravity;
+        this.y += this.speed;
+
+        if(this.y + this.h/2 >= canvas.height){
+          this.y = canvas.height - this.h/2;
+        }
+      }
+    };
+
+    // Obstáculos
+    const obstacles = [];
+    const gap = 120;
+
+    function drawObstacles() {
+      for(let i = 0; i < obstacles.length; i++) {
+        let o = obstacles[i];
+        ctx.drawImage(obstaculoImg, o.x, o.y, o.w, o.h);
+        ctx.drawImage(obstaculoImg, o.x, o.y + o.h + gap, o.w, canvas.height - o.h - gap);
+      }
+    }
+
+    function updateObstacles() {
+      if(frames % 100 === 0){
+        let h = 100 + Math.random() * 200;
+        obstacles.push({
+          x: canvas.width,
+          y: 0,
+          w: 50,
+          h: h
+        });
+      }
+
+      for(let i = 0; i < obstacles.length; i++){
+        let o = obstacles[i];
+        o.x -= 2;
+
+        // Colisão
+        if(ship.x + ship.w/2 > o.x && ship.x - ship.w/2 < o.x + o.w &&
+          (ship.y - ship.h/2 < o.h || ship.y + ship.h/2 > o.h + gap)){
+            gameOver();
+        }
+
+        if(o.x + o.w <= 0){
+          obstacles.shift();
+          score++;
+        }
+      }
+    }
+
+    // Pontuação
+    let score = 0;
+
+    function drawScore() {
+      ctx.fillStyle = "white";
+      ctx.font = "25px Trebuchet MS";
+      ctx.fillText("Tesouros: " + score, 10, 30);
+    }
+
+    // Game loop
+    function draw() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ship.draw();
+      drawObstacles();
+      drawScore();
+    }
+
+    function update() {
+      ship.update();
+      updateObstacles();
+
+      if(score >= 5){ // Quando coletar 5 pontos, vitória
+        vitoria();
+      }
+    }
+
+    function loop() {
+      draw();
+      update();
+      frames++;
+      requestAnimationFrame(loop);
+    }
+
+    function gameOver() {
+      alert("Você afundou 😅 Tente novamente!");
+      document.location.reload();
+    }
+
+    function vitoria() {
+      document.getElementById("mensagemFinal").style.display = "block";
+      cancelAnimationFrame(loop);
+    }
+
+    // Controles
+    document.addEventListener("keydown", function(e){
+      if(e.code === "Space"){
+        ship.flap();
+      }
+    });
+    canvas.addEventListener("click", function(){
+      ship.flap();
+    });
+
+    loop();
+  </script>
+</body>
+</html>
